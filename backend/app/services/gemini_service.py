@@ -1,8 +1,10 @@
 """Thin async wrapper around Google Gemini API."""
 import logging
+
 import google.generativeai as genai
 
 from app.core.config import get_settings
+from app.services.sanitizer import sanitize_ai_text
 
 _logger = logging.getLogger(__name__)
 
@@ -32,14 +34,14 @@ async def generate_timeline_narrative(
             f"Annual cost: ₹{financial_cost_inr:,.0f}\n"
             "Be factual, vivid, India-specific. No preaching. 2 sentences max."
         )
-        response = _model().generate_content(prompt)
-        return response.text.strip()
+        raw = _model().generate_content(prompt).text.strip()
+        return sanitize_ai_text(raw, max_length=400)
     except Exception as exc:
         _logger.warning("Gemini narrative failed (%s); using fallback", exc)
         return (
             f"By {year} your lifestyle emits {annual_tons:.1f} tons of CO₂ annually — "
             f"equivalent to {round(annual_tons / 0.021):,} trees working full-time to keep up. "
-            f"You've contributed {cumulative_tons:.0f} tons cumulatively since 2025."
+            f"You have contributed {cumulative_tons:.0f} tons cumulatively since 2025."
         )
 
 
@@ -58,12 +60,14 @@ async def generate_scenario_summary(
             f"CO₂ saved by 2040: {savings_tons:.1f} tons | Money saved: ₹{savings_inr:,.0f}\n"
             "Be specific, inspiring, India-relevant. 1 sentence."
         )
-        response = _model().generate_content(prompt)
-        return response.text.strip()
+        raw = _model().generate_content(prompt).text.strip()
+        return sanitize_ai_text(raw, max_length=200)
     except Exception as exc:
         _logger.warning("Gemini summary failed (%s); using fallback", exc)
         n = len(changes)
-        return (
-            f"{'Making ' + str(n) + ' changes' if n else 'Continuing current habits'} "
-            f"{'saves ' + str(round(savings_tons, 1)) + ' tons of CO₂ and ₹' + f'{savings_inr:,.0f}' + ' by 2040.' if savings_tons > 0 else 'keeps your footprint unchanged by 2040.'}"
-        )
+        if savings_tons > 0:
+            return (
+                f"Making {n} change{'s' if n != 1 else ''} saves "
+                f"{savings_tons:.1f} tons of CO₂ and ₹{savings_inr:,.0f} by 2040."
+            )
+        return "Continuing current habits keeps your footprint unchanged by 2040."

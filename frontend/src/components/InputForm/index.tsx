@@ -37,28 +37,40 @@ interface FieldProps {
   value: number
   onChange: (v: number) => void
   hint?: string
+  required?: boolean
 }
 
-const NumberField = memo(({ id, label, unit, min = 0, max, step = 1, value, onChange, hint }: FieldProps) => (
-  <div>
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
-      {label}
-      {unit && <span className="text-gray-400 font-normal ml-1">({unit})</span>}
-    </label>
-    <input
-      id={id}
-      type="number"
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition-colors"
-      aria-describedby={hint ? `${id}-hint` : undefined}
-    />
-    {hint && <p id={`${id}-hint`} className="mt-1 text-xs text-gray-400">{hint}</p>}
-  </div>
-))
+const NumberField = memo(
+  ({ id, label, unit, min = 0, max, step = 1, value, onChange, hint, required = true }: FieldProps) => (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+        {unit && <span className="text-gray-600 font-normal ml-1">({unit})</span>}
+      </label>
+      <input
+        id={id}
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        required={required}
+        autoComplete="off"
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
+          focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-300
+          transition-colors"
+        aria-describedby={hint ? `${id}-hint` : undefined}
+        aria-required={required}
+      />
+      {hint && (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-gray-600">
+          {hint}
+        </p>
+      )}
+    </div>
+  ),
+)
 
 interface SectionProps {
   title: string
@@ -91,7 +103,11 @@ export const InputForm = memo(({ onSubmit, loading }: Props) => {
   )
 
   return (
-    <form onSubmit={handleSubmit} noValidate aria-label="Carbon footprint profile form">
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      aria-label="Carbon footprint profile form"
+    >
       <div className="space-y-6">
         {/* Transport */}
         <Section title="Transport" emoji="🚗">
@@ -137,14 +153,18 @@ export const InputForm = memo(({ onSubmit, loading }: Props) => {
               <legend className="block text-sm font-medium text-gray-700 mb-2">
                 Diet type
               </legend>
-              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Select your diet type">
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="group"
+                aria-label="Select your diet type"
+              >
                 {DIET_OPTIONS.map((opt) => (
                   <label
                     key={opt.value}
                     className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                       profile.diet_type === opt.value
                         ? 'border-green-500 bg-green-50 text-green-800'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
+                        : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
                     }`}
                   >
                     <input
@@ -170,7 +190,7 @@ export const InputForm = memo(({ onSubmit, loading }: Props) => {
             step={5}
             value={profile.local_food_percent}
             onChange={(v) => set('local_food_percent', Math.min(100, Math.max(0, v)))}
-            hint="Reduces transport emissions"
+            hint="Reduces food transport emissions"
           />
         </Section>
 
@@ -233,11 +253,16 @@ export const InputForm = memo(({ onSubmit, loading }: Props) => {
           type="submit"
           disabled={loading}
           aria-busy={loading}
-          className="w-full py-4 px-6 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-lg font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-md"
+          className="w-full py-4 px-6 bg-green-600 hover:bg-green-700 disabled:bg-green-400
+            text-white text-lg font-semibold rounded-xl transition-colors
+            focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-md"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-3">
-              <span className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" aria-hidden="true" />
+              <span
+                className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"
+                aria-hidden="true"
+              />
               Generating your future…
             </span>
           ) : (

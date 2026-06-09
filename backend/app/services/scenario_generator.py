@@ -1,27 +1,25 @@
 """Orchestrates scenario generation: calculates emissions + calls Gemini for narratives."""
 from datetime import datetime, timezone
 
-from app.models.schemas import UserProfile, FutureScenario, TimelinePoint, ScenarioResponse
+from app.models.schemas import FutureScenario, ScenarioResponse, TimelinePoint, UserProfile
 from app.services.carbon_calculator import (
     build_carbon_profile,
     calculate_annual_cost_inr,
-    tons_to_trees,
     project_emissions,
+    tons_to_trees,
 )
-from app.services.gemini_service import generate_timeline_narrative, generate_scenario_summary
+from app.services.gemini_service import generate_scenario_summary, generate_timeline_narrative
 
 BASE_YEAR = 2025
 PROJECTION_YEARS = [2030, 2035, 2040]
-BAU_RATE = 0.02          # 2% annual growth (business as usual)
-COST_INFLATION = 0.04    # 4% annual cost inflation
-
+BAU_RATE = 0.02       # 2% annual growth (business as usual)
+COST_INFLATION = 0.04  # 4% annual cost inflation
 
 # ── Scenario definitions ──────────────────────────────────────────────────────
 _SCENARIOS: list[dict] = [
     {
         "id": "bau",
         "label": "Current Path",
-        "changes": [],
         "human_changes": [],
         "growth_rate": BAU_RATE,
         "profile_mutations": [],
@@ -29,19 +27,17 @@ _SCENARIOS: list[dict] = [
     {
         "id": "small",
         "label": "Small Steps",
-        "changes": ["metro_twice_week", "led_upgrade"],
         "human_changes": ["Use metro/bus twice a week", "Upgrade to LED + 20% solar"],
         "growth_rate": 0.005,
         "profile_mutations": [
             ("car_km_per_week", lambda v: v * 0.75),
             ("public_transport_km_per_week", lambda v: v + 50),
-            ("renewable_energy_percent", lambda v: min(100, v + 20)),
+            ("renewable_energy_percent", lambda v: min(100.0, v + 20)),
         ],
     },
     {
         "id": "committed",
         "label": "Committed Future",
-        "changes": ["metro_primary", "vegetarian", "solar_panels", "mindful_shopping"],
         "human_changes": [
             "Public transport as primary mode",
             "Switch to vegetarian diet",
@@ -53,7 +49,7 @@ _SCENARIOS: list[dict] = [
             ("car_km_per_week", lambda v: v * 0.4),
             ("public_transport_km_per_week", lambda v: v + 100),
             ("diet_type", lambda _: "vegetarian"),
-            ("renewable_energy_percent", lambda v: min(100, v + 50)),
+            ("renewable_energy_percent", lambda v: min(100.0, v + 50)),
             ("new_clothing_items_per_year", lambda v: max(0, v - 12)),
             ("new_electronics_per_year", lambda v: max(0, v - 2)),
         ],
@@ -61,24 +57,24 @@ _SCENARIOS: list[dict] = [
 ]
 
 
-def _apply_mutations(base: dict, mutations: list) -> dict:
+def _apply_mutations(base: dict, mutations: list) -> dict:  # type: ignore[type-arg]
     p = base.copy()
     for key, fn in mutations:
         p[key] = fn(p[key])
     return p
 
 
-def _cumulative_over_range(
+def _cumulative_tons(
     base_tons: float,
     rate: float,
-    start_year: int,
-    end_year: int,
+    from_year: int,
+    to_year: int,
 ) -> float:
-    """Approximate cumulative emissions between two years (trapezoidal)."""
-    total = 0.0
-    for y in range(start_year, end_year + 1):
-        total += project_emissions(base_tons, rate, y - BASE_YEAR)
-    return total
+    """Sum annual emissions from from_year to to_year (inclusive)."""
+    return sum(
+        project_emissions(base_tons, rate, y - BASE_YEAR)
+        for y in range(from_year, to_year + 1)
+    )
 
 
 async def generate_scenarios(profile: UserProfile) -> ScenarioResponse:
@@ -103,14 +99,12 @@ async def generate_scenarios(profile: UserProfile) -> ScenarioResponse:
         mod_tons = mod_carbon.total_tons
 
         timeline: list[TimelinePoint] = []
-        cumulative = 0.0
         prev_year = BASE_YEAR
 
         for year in PROJECTION_YEARS:
             offset = year - BASE_YEAR
             annual = project_emissions(mod_tons, cfg["growth_rate"], offset)
-            span = year - prev_year
-            cumulative += _cumulative_over_range(mod_tons, cfg["growth_rate"], prev_year + 1, year)
+            cumulative = _cumulative_tons(mod_tons, cfg["growth_rate"], BASE_YEAR + 1, year)
             annual_cost = mod_cost * ((1 + COST_INFLATION) ** offset)
             prev_year = year
 
@@ -128,7 +122,7 @@ async def generate_scenarios(profile: UserProfile) -> ScenarioResponse:
                 )
             )
 
-        # Savings vs BAU at 2040
+        # Savings vs BAU at horizon year 2040
         bau_2040 = project_emissions(base_tons, BAU_RATE, 2040 - BASE_YEAR)
         scen_2040 = project_emissions(mod_tons, cfg["growth_rate"], 2040 - BASE_YEAR)
         savings_tons = max(0.0, (bau_2040 - scen_2040) * 15)
