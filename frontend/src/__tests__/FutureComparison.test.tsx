@@ -74,7 +74,7 @@ describe('FutureComparison', () => {
   it('renders three scenario tabs', () => {
     render(<FutureComparison data={MOCK_DATA} onReset={vi.fn()} />)
     const tabs = screen.getAllByRole('tab')
-    expect(tabs).toHaveLength(3)
+    expect(tabs).toHaveLength(MOCK_DATA.scenarios.length)
   })
 
   it('BAU tab is selected by default', () => {
@@ -105,11 +105,14 @@ describe('FutureComparison', () => {
 
   it('shows savings for non-BAU scenarios', () => {
     render(<FutureComparison data={MOCK_DATA} onReset={vi.fn()} />)
+    // Click Small Steps tab first so its panel is active and text is visible
+    fireEvent.click(screen.getByRole('tab', { name: /small steps/i }))
     expect(screen.getByText(/Save 5.2t by 2040/i)).toBeInTheDocument()
   })
 
   it('has tabpanel roles', () => {
     render(<FutureComparison data={MOCK_DATA} onReset={vi.fn()} />)
-    expect(screen.getAllByRole('tabpanel')).toHaveLength(3)
+    // inactive panels use the HTML `hidden` attribute — query with hidden:true to include them
+    expect(screen.getAllByRole('tabpanel', { hidden: true })).toHaveLength(MOCK_DATA.scenarios.length)
   })
 })
