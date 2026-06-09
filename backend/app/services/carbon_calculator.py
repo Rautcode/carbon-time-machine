@@ -1,7 +1,7 @@
 """
 Pure carbon emission calculation functions.
 All values in kg CO2e unless documented otherwise.
-Sources: IPCC AR6, India CEA 2023, DEFRA 2023.
+Sources: IPCC AR6, India CEA 2023, DEFRA 2023, IEA 2023.
 """
 from dataclasses import dataclass
 
@@ -18,6 +18,8 @@ EF = {
     "electricity_india_grid": 0.82,    # kg CO2e / kWh (CEA 2023)
     "clothing_per_item": 33.4,
     "electronics_per_item": 70.0,
+    "streaming_hd_per_hour": 0.036,    # kg CO2e / hr HD streaming (IEA 2023)
+    "online_order_per_package": 0.3,   # kg CO2e / standard delivery package
 }
 
 FUEL_COST_PER_KM = 8.5       # ₹ / km
@@ -30,10 +32,17 @@ class CarbonProfile:
     food_tons: float
     energy_tons: float
     shopping_tons: float
+    digital_tons: float
 
     @property
     def total_tons(self) -> float:
-        return self.transport_tons + self.food_tons + self.energy_tons + self.shopping_tons
+        return (
+            self.transport_tons
+            + self.food_tons
+            + self.energy_tons
+            + self.shopping_tons
+            + self.digital_tons
+        )
 
     def as_dict(self) -> dict[str, float]:
         return {
@@ -41,6 +50,7 @@ class CarbonProfile:
             "food": round(self.food_tons, 3),
             "energy": round(self.energy_tons, 3),
             "shopping": round(self.shopping_tons, 3),
+            "digital": round(self.digital_tons, 3),
         }
 
 
@@ -60,9 +70,13 @@ def calculate_transport_emissions(
 
 def calculate_food_emissions(diet_type: str, local_food_percent: float) -> float:
     """Annual food emissions in tons CO2e."""
-    daily_kg = EF.get(f"diet_{diet_type}", EF["diet_meat_moderate"])
+    key = f"diet_{diet_type}"
+    if key not in EF:
+        raise ValueError(f"Unknown diet_type: {diet_type!r}")
+    daily_kg = EF[key]
     annual_kg = daily_kg * 365
-    local_reduction = (local_food_percent / 100.0) * 0.10
+    local_pct = max(0.0, min(100.0, local_food_percent))
+    local_reduction = (local_pct / 100.0) * 0.10
     return annual_kg * (1 - local_reduction) / 1000
 
 
@@ -73,7 +87,8 @@ def calculate_energy_emissions(
 ) -> float:
     """Annual energy emissions in tons CO2e."""
     annual_kwh = monthly_kwh * 12
-    grid_fraction = 1.0 - (renewable_percent / 100.0)
+    renewable_pct = max(0.0, min(100.0, renewable_percent))
+    grid_fraction = 1.0 - (renewable_pct / 100.0)
     electricity_kg = annual_kwh * grid_fraction * EF["electricity_india_grid"]
     # Cooking gas / misc: ~0.4 kg CO2e per sqft per year
     other_kg = home_size_sqft * 0.4
@@ -84,6 +99,20 @@ def calculate_shopping_emissions(clothing_items: int, electronics_items: int) ->
     """Annual shopping emissions in tons CO2e."""
     kg = clothing_items * EF["clothing_per_item"] + electronics_items * EF["electronics_per_item"]
     return kg / 1000
+
+
+def calculate_digital_carbon(
+    streaming_hours_per_week: float,
+    online_orders_per_month: int,
+) -> float:
+    """Annual digital / shadow-carbon emissions in tons CO2e.
+
+    Covers HD video streaming (IEA 2023: 36 g CO2e/hr) and standard
+    e-commerce deliveries (300 g CO2e/package).
+    """
+    streaming_kg = streaming_hours_per_week * 52 * EF["streaming_hd_per_hour"]
+    orders_kg = online_orders_per_month * 12 * EF["online_order_per_package"]
+    return (streaming_kg + orders_kg) / 1000
 
 
 def build_carbon_profile(p: dict) -> CarbonProfile:
@@ -103,6 +132,10 @@ def build_carbon_profile(p: dict) -> CarbonProfile:
         shopping_tons=calculate_shopping_emissions(
             p["new_clothing_items_per_year"],
             p["new_electronics_per_year"],
+        ),
+        digital_tons=calculate_digital_carbon(
+            p.get("streaming_hours_per_week", 0),
+            p.get("online_orders_per_month", 0),
         ),
     )
 

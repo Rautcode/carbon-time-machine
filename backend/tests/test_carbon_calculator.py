@@ -5,6 +5,7 @@ from app.services.carbon_calculator import (
     CarbonProfile,
     build_carbon_profile,
     calculate_annual_cost_inr,
+    calculate_digital_carbon,
     calculate_energy_emissions,
     calculate_food_emissions,
     calculate_shopping_emissions,
@@ -69,10 +70,9 @@ class TestFoodEmissions:
         reduction = (base - full_local) / base
         assert abs(reduction - 0.10) < 0.001
 
-    def test_unknown_diet_falls_back_to_moderate(self):
-        moderate = calculate_food_emissions("meat_moderate", 0)
-        unknown = calculate_food_emissions("unknown_diet", 0)
-        assert abs(moderate - unknown) < 0.001
+    def test_unknown_diet_raises_value_error(self):
+        with pytest.raises(ValueError, match="Unknown diet_type"):
+            calculate_food_emissions("unknown_diet", 0)
 
 
 # ── Energy ────────────────────────────────────────────────────────────────────
@@ -115,19 +115,47 @@ class TestShoppingEmissions:
         assert abs(ten - single * 10) < 0.001
 
 
+# ── Digital carbon ────────────────────────────────────────────────────────────
+
+class TestDigitalCarbon:
+    def test_zero_inputs_returns_zero(self):
+        assert calculate_digital_carbon(0, 0) == 0.0
+
+    def test_streaming_correct_math(self):
+        result = calculate_digital_carbon(10, 0)
+        expected = 10 * 52 * EF["streaming_hd_per_hour"] / 1000
+        assert abs(result - expected) < 0.001
+
+    def test_orders_correct_math(self):
+        result = calculate_digital_carbon(0, 4)
+        expected = 4 * 12 * EF["online_order_per_package"] / 1000
+        assert abs(result - expected) < 0.001
+
+    def test_combined_additive(self):
+        streaming = calculate_digital_carbon(10, 0)
+        orders = calculate_digital_carbon(0, 4)
+        combined = calculate_digital_carbon(10, 4)
+        assert abs(combined - (streaming + orders)) < 0.001
+
+    def test_result_in_tons_not_kg(self):
+        # 1 hr/week × 52 × 0.036 kg = 1.872 kg → 0.001872 t — well under 1 t
+        result = calculate_digital_carbon(1, 0)
+        assert result < 1.0
+
+
 # ── CarbonProfile ─────────────────────────────────────────────────────────────
 
 class TestCarbonProfile:
     def test_total_is_sum_of_parts(self):
         cp = CarbonProfile(
-            transport_tons=2.0, food_tons=1.5, energy_tons=1.0, shopping_tons=0.5
+            transport_tons=2.0, food_tons=1.5, energy_tons=1.0, shopping_tons=0.5, digital_tons=0.2
         )
-        assert cp.total_tons == 5.0
+        assert abs(cp.total_tons - 5.2) < 1e-9
 
-    def test_as_dict_has_four_keys(self):
-        cp = CarbonProfile(transport_tons=1, food_tons=1, energy_tons=1, shopping_tons=1)
+    def test_as_dict_has_five_keys(self):
+        cp = CarbonProfile(transport_tons=1, food_tons=1, energy_tons=1, shopping_tons=1, digital_tons=0)
         d = cp.as_dict()
-        assert set(d.keys()) == {"transport", "food", "energy", "shopping"}
+        assert set(d.keys()) == {"transport", "food", "energy", "shopping", "digital"}
 
     def test_build_carbon_profile_returns_profile(self):
         p = {
@@ -142,6 +170,8 @@ class TestCarbonProfile:
             "home_size_sqft": 800,
             "new_clothing_items_per_year": 10,
             "new_electronics_per_year": 1,
+            "streaming_hours_per_week": 7,
+            "online_orders_per_month": 2,
         }
         cp = build_carbon_profile(p)
         assert cp.total_tons > 0
@@ -161,7 +191,7 @@ class TestHelpers:
         assert tons_to_trees(-5.0) == 0
 
     def test_project_emissions_zero_rate(self):
-        assert project_emissions(3.0, 0.0, 5) == 3.0
+        assert abs(project_emissions(3.0, 0.0, 5) - 3.0) < 1e-9
 
     def test_project_emissions_positive_rate_grows(self):
         assert project_emissions(3.0, 0.02, 10) > 3.0

@@ -2,13 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Accessible focus styles */
+/* ── Accessible focus styles ────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid #16a34a;
   outline-offset: 2px;
 }
 
-/* Skip-nav link — hidden until focused */
+/* Skip-nav link */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -20,7 +20,6 @@
   white-space: nowrap;
   border-width: 0;
 }
-
 .focus\:not-sr-only:focus {
   position: absolute;
   width: auto;
@@ -32,12 +31,12 @@
   white-space: normal;
 }
 
-/* Smooth scroll */
+/* ── Smooth scroll ──────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
 
-/* Reduce motion for accessibility */
+/* ── Reduce motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -46,4 +45,68 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Range slider — cross-browser thumb styling ─────────────────────────── */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: #d1fae5;
+  outline: none;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #16a34a;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+  transition: box-shadow 0.15s;
+}
+input[type='range']::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 5px rgba(22, 163, 74, 0.3);
+}
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #16a34a;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+}
+input[type='range']:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.5);
+}
+
+/* ── Gauge SVG transition ────────────────────────────────────────────────── */
+.gauge-arc {
+  transition: stroke-dashoffset 1.3s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 0.6s ease;
+}
+
+/* ── Section card hover lift ────────────────────────────────────────────── */
+.section-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.section-card:focus-within {
+  box-shadow: 0 4px 20px rgba(22, 163, 74, 0.15);
+}
+
+/* ── Timeline card entrance ─────────────────────────────────────────────── */
+.timeline-card {
+  animation: slideUp 0.45s ease-out both;
+}
+
+/* ── Gradient text utility ──────────────────────────────────────────────── */
+.text-gradient {
+  background: linear-gradient(135deg, #15803d 0%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

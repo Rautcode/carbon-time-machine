@@ -101,7 +101,7 @@ class TestScenariosSuccess:
                 return_value="Test summary.",
             ),
         ):
-            return client.post("/api/scenarios", json=profile or VALID_PROFILE)
+            return client.post("/api/scenarios", json=VALID_PROFILE if profile is None else profile)
 
     def test_returns_three_scenarios(self, client):
         r = self._post(client)
@@ -112,9 +112,9 @@ class TestScenariosSuccess:
         r = self._post(client)
         assert r.json()["current_annual_tons"] > 0
 
-    def test_breakdown_has_four_keys(self, client):
+    def test_breakdown_has_five_keys(self, client):
         r = self._post(client)
-        assert set(r.json()["breakdown"].keys()) == {"transport", "food", "energy", "shopping"}
+        assert set(r.json()["breakdown"].keys()) == {"transport", "food", "energy", "shopping", "digital"}
 
     def test_breakdown_sums_to_total(self, client):
         r = self._post(client)

@@ -12,6 +12,9 @@ export interface UserProfile {
   home_size_sqft: number
   new_clothing_items_per_year: number
   new_electronics_per_year: number
+  // Shadow / digital carbon
+  streaming_hours_per_week: number
+  online_orders_per_month: number
 }
 
 export interface TimelinePoint {
@@ -40,6 +43,7 @@ export interface ScenarioResponse {
     food: number
     energy: number
     shopping: number
+    digital: number
   }
   scenarios: FutureScenario[]
   generated_at: string

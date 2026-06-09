@@ -22,6 +22,10 @@ class UserProfile(BaseModel):
     new_clothing_items_per_year: int = Field(ge=0, le=500)
     new_electronics_per_year: int = Field(ge=0, le=100)
 
+    # Digital / Shadow Carbon
+    streaming_hours_per_week: float = Field(default=0, ge=0, le=168, description="Video streaming hours per week (HD)")
+    online_orders_per_month: int = Field(default=0, ge=0, le=500, description="Online delivery packages per month")
+
     @field_validator("car_km_per_week", "public_transport_km_per_week", mode="before")
     @classmethod
     def round_km(cls, v: float) -> float:
