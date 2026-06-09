@@ -26,6 +26,9 @@ Most carbon tools show you a number — *"you emit 6.2 tons/year"* — and you f
 | 🌡️ **Paris 1.5°C badge** | Green if your Committed 2030 footprint is ≤ 2.0 t, red if not |
 | 📱 **Shadow / digital carbon** | HD streaming (36 g CO₂/hr, IEA 2023) + online deliveries (300 g CO₂/package) |
 | 🤖 **AI narratives** | Google Gemini 1.5 Flash writes a vivid 2-sentence story for each future year |
+| 💡 **AI carbon tips** | Gemini generates 5 personalised reduction tips ranked by your highest categories |
+| 🌐 **Live climate widget** | Real-time India temperature via Open-Meteo + IPCC global anomaly + CO₂ ppm |
+| 👤 **Persona presets** | One-click profiles: Student · Urban Pro · Family · Minimalist |
 | 📈 **3 future scenarios** | Business-as-Usual · Small Steps · Committed (Paris-aligned) |
 | 💰 **Financial projection** | Annual fuel + electricity cost saved by scenario |
 | 🌲 **Tree equivalents** | Tonnes saved → trees to plant (USDA: 21 kg CO₂/tree/year) |
@@ -59,7 +62,7 @@ Results page              ──  Gauge · Paris badge · Timeline · Savings ba
 | Backend | Python 3.11 · FastAPI · Pydantic v2 · slowapi |
 | AI | Google Gemini 1.5 Flash |
 | Frontend | React 18 · TypeScript · Vite · TailwindCSS |
-| Testing | pytest (61 tests) · Vitest + @testing-library/react (39 tests) |
+| Testing | pytest (75 tests) · Vitest + @testing-library/react (39 tests) |
 
 ---
 
@@ -75,16 +78,22 @@ carbon-time-machine/
 │   │   │   ├── carbon_calculator.py  # Pure emission math (no I/O)
 │   │   │   ├── scenario_generator.py # Orchestration: calc → Gemini → response
 │   │   │   ├── gemini_service.py     # Gemini API wrapper with sanitized fallbacks
+│   │   │   ├── tips_service.py       # Gemini-powered personalised CO₂ tips
+│   │   │   ├── climate_service.py    # Open-Meteo live temp + IPCC anomaly
 │   │   │   └── sanitizer.py         # Strip HTML/scripts from AI output
-│   │   └── routers/scenarios.py     # POST /api/scenarios · rate-limited
-│   └── tests/                       # 61 pytest tests, exit 0
+│   │   └── routers/
+│   │       ├── scenarios.py         # POST /api/scenarios · rate-limited
+│   │       └── extras.py            # GET /api/climate · POST /api/tips
+│   └── tests/                       # 75 pytest tests, exit 0
 │
 └── frontend/
     └── src/
         ├── components/
-        │   ├── InputForm/            # 5-section form with live sliders
-        │   ├── FutureComparison/     # Gauge · Paris badge · breakdown bars · tabs
+        │   ├── InputForm/            # 5-section form with live sliders + persona presets
+        │   ├── FutureComparison/     # Gauge · Paris badge · breakdown · sidebar layout
         │   ├── Timeline/             # Year-by-year animated timeline cards
+        │   ├── TipsPanel/            # Lazy-loaded AI carbon reduction tips
+        │   ├── ClimateWidget/        # Live temperature + CO₂ ppm in header
         │   └── shared/               # LoadingSpinner · ErrorMessage
         ├── hooks/useScenarios.ts     # API state (loading / error / data)
         ├── utils/formatters.ts       # formatTons · formatINR · emissionColor
@@ -124,7 +133,7 @@ carbon-time-machine/
 ## Testing
 
 ```bash
-# Backend — 61 tests
+# Backend — 75 tests
 cd backend
 python -m venv .venv && .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
