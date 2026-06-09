@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.core.config import get_settings
-from app.routers import scenarios
+from app.routers import extras, scenarios
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,3 +86,4 @@ async def validate_config() -> None:
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 app.include_router(scenarios.router)
+app.include_router(extras.router)

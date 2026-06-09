@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.routers.scenarios import limiter as _route_limiter
+from app.routers.extras import limiter as _extras_limiter
 
 
 @pytest.fixture(scope="session")
@@ -13,6 +14,7 @@ def client() -> TestClient:
 def reset_rate_limiter() -> None:
     """Reset rate-limiter storage before each test so tests don't bleed into each other."""
     _route_limiter._storage.reset()
+    _extras_limiter._storage.reset()
 
 
 VALID_PROFILE = {

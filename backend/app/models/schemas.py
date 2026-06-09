@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Literal
+from typing import Literal, Annotated
 
 
 class UserProfile(BaseModel):
@@ -56,3 +56,35 @@ class ScenarioResponse(BaseModel):
     breakdown: dict[str, float]
     scenarios: list[FutureScenario]
     generated_at: str
+
+
+# ── AI Tips ───────────────────────────────────────────────────────────────────
+
+_TipCategory = Literal["transport", "food", "energy", "shopping", "digital"]
+
+
+class CarbonTip(BaseModel):
+    title: str = Field(max_length=120)
+    description: str = Field(max_length=400)
+    estimated_savings_kg: float = Field(ge=0)
+    category: _TipCategory
+
+
+class TipsRequest(BaseModel):
+    current_annual_tons: float = Field(gt=0, le=1000)
+    breakdown: dict[str, Annotated[float, Field(ge=0)]]
+
+
+class TipsResponse(BaseModel):
+    tips: list[CarbonTip]
+    generated_at: str
+
+
+# ── Climate Context ───────────────────────────────────────────────────────────
+
+class ClimateContext(BaseModel):
+    current_temp_c: float
+    global_anomaly_c: float
+    co2_ppm: float
+    location: str
+    fetched_at: str

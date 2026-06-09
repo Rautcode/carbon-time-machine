@@ -50,3 +50,29 @@ export interface ScenarioResponse {
 }
 
 export type AppStep = 'input' | 'loading' | 'results'
+
+// ── AI Tips ──────────────────────────────────────────────────────────────────
+
+export type TipCategory = 'transport' | 'food' | 'energy' | 'shopping' | 'digital'
+
+export interface CarbonTip {
+  title: string
+  description: string
+  estimated_savings_kg: number
+  category: TipCategory
+}
+
+export interface TipsResponse {
+  tips: CarbonTip[]
+  generated_at: string
+}
+
+// ── Climate Context ───────────────────────────────────────────────────────────
+
+export interface ClimateContext {
+  current_temp_c: number
+  global_anomaly_c: number
+  co2_ppm: number
+  location: string
+  fetched_at: string
+}

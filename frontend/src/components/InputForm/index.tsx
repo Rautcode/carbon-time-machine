@@ -6,6 +6,57 @@ interface Props {
   loading: boolean
 }
 
+const PERSONA_PRESETS: { label: string; emoji: string; description: string; profile: UserProfile }[] = [
+  {
+    label: 'Student',
+    emoji: '🎓',
+    description: 'Low car use, veg diet',
+    profile: {
+      car_km_per_week: 20, domestic_flights_per_year: 0, international_flights_per_year: 0,
+      public_transport_km_per_week: 60, diet_type: 'vegetarian', local_food_percent: 30,
+      monthly_electricity_kwh: 60, renewable_energy_percent: 5, home_size_sqft: 200,
+      new_clothing_items_per_year: 8, new_electronics_per_year: 1,
+      streaming_hours_per_week: 20, online_orders_per_month: 3,
+    },
+  },
+  {
+    label: 'Urban Pro',
+    emoji: '🏙️',
+    description: 'Car + flights, mixed diet',
+    profile: {
+      car_km_per_week: 150, domestic_flights_per_year: 6, international_flights_per_year: 1,
+      public_transport_km_per_week: 30, diet_type: 'meat_moderate', local_food_percent: 20,
+      monthly_electricity_kwh: 300, renewable_energy_percent: 5, home_size_sqft: 900,
+      new_clothing_items_per_year: 20, new_electronics_per_year: 2,
+      streaming_hours_per_week: 15, online_orders_per_month: 8,
+    },
+  },
+  {
+    label: 'Family',
+    emoji: '👨‍👩‍👧',
+    description: 'Large home, high consumption',
+    profile: {
+      car_km_per_week: 250, domestic_flights_per_year: 4, international_flights_per_year: 0,
+      public_transport_km_per_week: 20, diet_type: 'meat_moderate', local_food_percent: 35,
+      monthly_electricity_kwh: 500, renewable_energy_percent: 10, home_size_sqft: 1500,
+      new_clothing_items_per_year: 40, new_electronics_per_year: 3,
+      streaming_hours_per_week: 25, online_orders_per_month: 12,
+    },
+  },
+  {
+    label: 'Minimalist',
+    emoji: '🌿',
+    description: 'Zero car, vegan, solar',
+    profile: {
+      car_km_per_week: 0, domestic_flights_per_year: 0, international_flights_per_year: 0,
+      public_transport_km_per_week: 80, diet_type: 'vegan', local_food_percent: 70,
+      monthly_electricity_kwh: 80, renewable_energy_percent: 60, home_size_sqft: 400,
+      new_clothing_items_per_year: 3, new_electronics_per_year: 0,
+      streaming_hours_per_week: 5, online_orders_per_month: 1,
+    },
+  },
+]
+
 const DEFAULT_PROFILE: UserProfile = {
   car_km_per_week: 100,
   domestic_flights_per_year: 2,
@@ -113,7 +164,7 @@ const NumberField = memo(({ id, label, unit, min = 0, max, step = 1, value, onCh
       required
       autoComplete="off"
       aria-required="true"
-      onChange={(e) => onChange(Math.max(min, parseFloat(e.target.value) || 0))}
+      onChange={(e) => onChange(Math.min(max ?? Infinity, Math.max(min, parseFloat(e.target.value) || 0)))}
       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
         focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-300
         transition-colors bg-white"
@@ -161,6 +212,33 @@ export const InputForm = memo(({ onSubmit, loading }: Props) => {
   return (
     <form onSubmit={handleSubmit} noValidate aria-label="Carbon footprint profile form">
       <div className="space-y-5">
+
+        {/* ── Persona presets ── */}
+        <div>
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+            Quick start — pick a persona
+          </p>
+          <div className="grid grid-cols-4 gap-2" role="group" aria-label="Persona presets">
+            {PERSONA_PRESETS.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => setProfile(p.profile)}
+                className="flex flex-col items-center gap-1 p-3 rounded-2xl border-2 border-gray-200
+                  bg-white hover:border-green-400 hover:bg-green-50 hover:shadow-sm
+                  focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1
+                  transition-all text-center"
+                aria-label={`Load ${p.label} persona: ${p.description}`}
+              >
+                <span className="text-2xl" aria-hidden="true">{p.emoji}</span>
+                <span className="text-xs font-semibold text-gray-700 leading-tight">{p.label}</span>
+                <span className="text-xs text-gray-400 leading-tight hidden sm:block">{p.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <hr className="border-gray-100" />
 
         {/* ── Transport ── */}
         <Section title="Transport" emoji="🚗" color="border-blue-200">

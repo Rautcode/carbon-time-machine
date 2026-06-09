@@ -1,6 +1,7 @@
 import { memo, useState } from 'react'
 import type { ScenarioResponse } from '../../types'
 import { Timeline } from '../Timeline'
+import { TipsPanel } from '../TipsPanel'
 import { formatINR, formatTons, breakdownPercent, scenarioGradient } from '../../utils/formatters'
 
 interface Props {
@@ -103,7 +104,8 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
   const total = data.current_annual_tons
 
   const committed = data.scenarios.find((s) => s.scenario_id === 'committed')
-  const paris2030 = committed?.timeline[0]?.annual_emissions_tons ?? Infinity
+  const paris2030 =
+    committed?.timeline.find((t) => t.year === 2030)?.annual_emissions_tons ?? Infinity
 
   return (
     <div className="animate-fade-in space-y-8">
@@ -117,7 +119,7 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
           <div className="flex-1 w-full">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <h2 className="text-xl font-bold text-gray-900">Your Environmental Future</h2>
-              <ParisBadge committedTons2030={paris2030} />
+              {Number.isFinite(paris2030) && <ParisBadge committedTons2030={paris2030} />}
             </div>
             <dl className="space-y-2">
               {(Object.entries(data.breakdown) as [keyof typeof data.breakdown, number][]).map(([key, val]) => {
@@ -192,6 +194,14 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
           </div>
         ))}
       </section>
+
+      {/* ── AI Tips ── */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-6">
+        <TipsPanel
+          currentAnnualTons={data.current_annual_tons}
+          breakdown={data.breakdown}
+        />
+      </div>
 
       {/* ── Reset ── */}
       <div className="text-center pt-2">

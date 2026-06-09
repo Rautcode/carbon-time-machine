@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { InputForm } from './components/InputForm'
 import { FutureComparison } from './components/FutureComparison'
+import { ClimateWidget } from './components/ClimateWidget'
 import { LoadingSpinner } from './components/shared/LoadingSpinner'
 import { ErrorMessage } from './components/shared/ErrorMessage'
 import { useScenarios } from './hooks/useScenarios'
@@ -50,8 +51,11 @@ export default function App() {
             <p className="text-xs text-gray-500">See the future your lifestyle creates</p>
           </div>
 
+          {/* Live climate context */}
+          <ClimateWidget />
+
           {/* Step indicator */}
-          <div className="ml-auto flex items-center gap-1.5" aria-label="Progress steps">
+          <div className="flex items-center gap-1.5" aria-label="Progress steps">
             {(() => {
               const steps = ['input', 'loading', 'results'] as const
               const stepIndex = steps.indexOf(step)
