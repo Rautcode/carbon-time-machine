@@ -37,7 +37,7 @@ export default function App() {
 
       {/* ── Header ── */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-green-100 shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-3">
           {/* Animated earth icon */}
           <div className="relative w-9 h-9 flex-shrink-0" aria-hidden="true">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 to-green-500" />
@@ -74,7 +74,7 @@ export default function App() {
       </header>
 
       {/* ── Main ── */}
-      <main id="main-content" className="max-w-2xl mx-auto px-4 py-8" tabIndex={-1}>
+      <main id="main-content" className="max-w-7xl mx-auto px-6 py-8" tabIndex={-1}>
 
         {step === 'input' && (
           <div className="animate-fade-in">
@@ -88,12 +88,15 @@ export default function App() {
                 <span className="text-gradient">2040</span>{' '}
                 look like?
               </h2>
-              <p className="text-gray-600 max-w-md mx-auto leading-relaxed">
+              <p className="text-gray-600 max-w-xl mx-auto leading-relaxed">
                 Enter your lifestyle habits — AI will project your environmental and
                 financial future across three different paths.
               </p>
             </div>
-            <InputForm onSubmit={handleSubmit} loading={loading} />
+            {/* Constrain form to readable width but centred in wide layout */}
+            <div className="max-w-4xl mx-auto">
+              <InputForm onSubmit={handleSubmit} loading={loading} />
+            </div>
           </div>
         )}
 

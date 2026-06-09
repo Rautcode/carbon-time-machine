@@ -100,7 +100,9 @@ function ParisBadge({ committedTons2030 }: { committedTons2030: number }) {
 
 /* ── Main component ─────────────────────────────────────────────────────── */
 export const FutureComparison = memo(({ data, onReset }: Props) => {
-  const [activeScenario, setActiveScenario] = useState('bau')
+  const [activeScenario, setActiveScenario] = useState(
+    () => data.scenarios[0]?.scenario_id ?? 'bau'
+  )
   const total = data.current_annual_tons
 
   const committed = data.scenarios.find((s) => s.scenario_id === 'committed')
@@ -108,9 +110,9 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
     committed?.timeline.find((t) => t.year === 2030)?.annual_emissions_tons ?? Infinity
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="animate-fade-in space-y-6">
 
-      {/* ── Hero card: gauge + breakdown ── */}
+      {/* ── Top row: gauge + breakdown (full width) ── */}
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-md p-6">
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="flex-shrink-0">
@@ -118,12 +120,12 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
           </div>
           <div className="flex-1 w-full">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <h2 className="text-xl font-bold text-gray-900">Your Environmental Future</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Your Environmental Future</h2>
               {Number.isFinite(paris2030) && <ParisBadge committedTons2030={paris2030} />}
             </div>
-            <dl className="space-y-2">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2">
               {(Object.entries(data.breakdown) as [keyof typeof data.breakdown, number][]).map(([key, val]) => {
-                const pct = breakdownPercent(val, total)
+                const pct = total > 0 ? Math.max(0, breakdownPercent(val, total)) : 0
                 return (
                   <div key={key}>
                     <div className="flex justify-between text-xs mb-0.5">
@@ -149,53 +151,80 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
         </div>
       </div>
 
-      {/* ── Scenario tabs ── */}
-      <section aria-label="Future scenarios">
-        <h3 className="text-base font-semibold text-gray-800 mb-3">Choose a Future Path</h3>
-        <div role="tablist" aria-label="Select future scenario" className="grid grid-cols-3 gap-3 mb-6">
-          {data.scenarios.map((s) => (
-            <button
-              key={s.scenario_id}
-              role="tab"
-              aria-selected={activeScenario === s.scenario_id}
-              aria-controls={`panel-${s.scenario_id}`}
-              id={`tab-${s.scenario_id}`}
-              onClick={() => setActiveScenario(s.scenario_id)}
-              className={`rounded-2xl border-2 p-4 text-left transition-all
-                focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1
-                ${activeScenario === s.scenario_id
-                  ? 'border-green-500 shadow-lg scale-105 animate-glow-green'
-                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                } bg-gradient-to-br ${scenarioGradient(s.scenario_id)}`}
-            >
-              <div className="text-2xl mb-1.5" aria-hidden="true">{SCENARIO_ICONS[s.scenario_id]}</div>
-              <div className="text-xs font-bold text-gray-800 leading-tight">{s.label}</div>
-              {s.total_savings_tons > 0 && (
-                <div className="text-xs text-green-700 mt-1 font-semibold">
-                  Save {s.total_savings_tons.toFixed(1)}t by 2040
+      {/* ── Main desktop layout: sidebar + timeline ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* ── LEFT sidebar: scenario selector ── */}
+        <aside className="lg:col-span-1 space-y-4">
+          <h3 className="text-base font-semibold text-gray-800">Choose a Future Path</h3>
+          <div role="tablist" aria-label="Select future scenario" className="flex flex-col gap-3">
+            {data.scenarios.map((s) => (
+              <button
+                key={s.scenario_id}
+                role="tab"
+                aria-selected={activeScenario === s.scenario_id}
+                aria-controls={`panel-${s.scenario_id}`}
+                id={`tab-${s.scenario_id}`}
+                onClick={() => setActiveScenario(s.scenario_id)}
+                className={`rounded-2xl border-2 p-4 text-left transition-all w-full
+                  focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1
+                  ${activeScenario === s.scenario_id
+                    ? 'border-green-500 shadow-lg bg-green-50 animate-glow-green'
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white/80'
+                  } bg-gradient-to-br ${scenarioGradient(s.scenario_id)}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl" aria-hidden="true">{SCENARIO_ICONS[s.scenario_id] ?? '🌍'}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-gray-800 leading-tight">{s.label}</div>
+                    {s.total_savings_tons > 0 && (
+                      <div className="text-xs text-green-700 mt-0.5 font-semibold">
+                        Save {s.total_savings_tons.toFixed(1)}t by 2040
+                      </div>
+                    )}
+                    {s.total_savings_inr > 0 && (
+                      <div className="text-xs text-blue-600">{formatINR(s.total_savings_inr)} saved</div>
+                    )}
+                  </div>
+                  {activeScenario === s.scenario_id && (
+                    <span className="text-green-500 text-lg" aria-hidden="true">›</span>
+                  )}
                 </div>
-              )}
-              {s.total_savings_inr > 0 && (
-                <div className="text-xs text-blue-600">{formatINR(s.total_savings_inr)} saved</div>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {data.scenarios.map((s) => (
-          <div
-            key={s.scenario_id}
-            id={`panel-${s.scenario_id}`}
-            role="tabpanel"
-            aria-labelledby={`tab-${s.scenario_id}`}
-            hidden={activeScenario !== s.scenario_id}
-          >
-            <Timeline scenario={s} isActive={activeScenario === s.scenario_id} />
+              </button>
+            ))}
           </div>
-        ))}
-      </section>
 
-      {/* ── AI Tips ── */}
+          {/* Reset button in sidebar on desktop */}
+          <button
+            onClick={onReset}
+            className="w-full px-4 py-2.5 border-2 border-gray-300 text-gray-600 rounded-2xl
+              hover:border-gray-400 hover:bg-gray-50
+              focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
+              transition-all font-medium text-sm mt-2"
+            aria-label="Start over and enter a new profile"
+          >
+            ← Start Over
+          </button>
+        </aside>
+
+        {/* ── RIGHT: timeline panels ── */}
+        <section className="lg:col-span-2" aria-label="Future scenarios">
+          {data.scenarios.map((s) => (
+            <div
+              key={s.scenario_id}
+              id={`panel-${s.scenario_id}`}
+              role="tabpanel"
+              aria-labelledby={`tab-${s.scenario_id}`}
+              hidden={activeScenario !== s.scenario_id}
+            >
+              <Timeline scenario={s} isActive={activeScenario === s.scenario_id} />
+            </div>
+          ))}
+        </section>
+
+      </div>{/* end sidebar + timeline grid */}
+
+      {/* ── AI Tips (full width) ── */}
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-6">
         <TipsPanel
           currentAnnualTons={data.current_annual_tons}
@@ -203,19 +232,6 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
         />
       </div>
 
-      {/* ── Reset ── */}
-      <div className="text-center pt-2">
-        <button
-          onClick={onReset}
-          className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-2xl
-            hover:border-gray-400 hover:bg-gray-50
-            focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
-            transition-all font-medium"
-          aria-label="Start over and enter a new profile"
-        >
-          ← Start Over
-        </button>
-      </div>
     </div>
   )
 })

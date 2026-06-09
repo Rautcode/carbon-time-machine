@@ -123,7 +123,7 @@ const SliderField = memo(({
         aria-valuemax={max}
         aria-valuenow={value}
         aria-valuetext={`${value}${unit ? ' ' + unit : ''}`}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onChange={(e) => onChange(parseFloat(e.target.value) || min)}
         style={{
           background: `linear-gradient(to right, #16a34a ${pct}%, #d1fae5 ${pct}%)`,
         }}
@@ -240,173 +240,179 @@ export const InputForm = memo(({ onSubmit, loading }: Props) => {
 
         <hr className="border-gray-100" />
 
-        {/* ── Transport ── */}
-        <Section title="Transport" emoji="🚗" color="border-blue-200">
-          <SliderField
-            id="car_km"
-            label="Car distance"
-            unit="km/week"
-            max={500}
-            step={10}
-            value={profile.car_km_per_week}
-            onChange={(v) => set('car_km_per_week', v)}
-            hint="Typical Indian urban commute: 80–150 km/week"
-          />
-          <SliderField
-            id="public_transport"
-            label="Public transport"
-            unit="km/week"
-            max={200}
-            step={5}
-            value={profile.public_transport_km_per_week}
-            onChange={(v) => set('public_transport_km_per_week', v)}
-            hint="Metro, bus, auto-rickshaw"
-          />
-          <NumberField
-            id="domestic_flights"
-            label="Domestic flights"
-            unit="per year"
-            max={100}
-            value={profile.domestic_flights_per_year}
-            onChange={(v) => set('domestic_flights_per_year', Math.round(v))}
-          />
-          <NumberField
-            id="intl_flights"
-            label="International flights"
-            unit="per year"
-            max={50}
-            value={profile.international_flights_per_year}
-            onChange={(v) => set('international_flights_per_year', Math.round(v))}
-          />
-        </Section>
+        {/* ── Two-column layout on desktop ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        {/* ── Food ── */}
-        <Section title="Food & Diet" emoji="🍽️" color="border-orange-200">
-          <div className="sm:col-span-2">
-            <fieldset>
-              <legend className="text-sm font-medium text-gray-700 mb-3">Diet type</legend>
-              <div
-                role="radiogroup"
-                aria-label="Select your diet type"
-                className="grid grid-cols-2 gap-2"
-              >
-                {DIET_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                      profile.diet_type === opt.value
-                        ? 'border-green-500 bg-green-50 text-green-800 shadow-sm'
-                        : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="diet_type"
-                      value={opt.value}
-                      checked={profile.diet_type === opt.value}
-                      onChange={() => set('diet_type', opt.value)}
-                      className="sr-only"
-                    />
-                    <span aria-hidden="true" className="text-xl">{opt.emoji}</span>
-                    <div>
-                      <div className="text-xs font-semibold">{opt.label}</div>
-                      <div className="text-xs text-gray-400">{opt.sub}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+          {/* ── LEFT: Transport + Energy + Digital ── */}
+          <div className="space-y-5">
+            <Section title="Transport" emoji="🚗" color="border-blue-200">
+              <SliderField
+                id="car_km"
+                label="Car distance"
+                unit="km/week"
+                max={500}
+                step={10}
+                value={profile.car_km_per_week}
+                onChange={(v) => set('car_km_per_week', v)}
+                hint="Typical Indian urban commute: 80–150 km/week"
+              />
+              <SliderField
+                id="public_transport"
+                label="Public transport"
+                unit="km/week"
+                max={200}
+                step={5}
+                value={profile.public_transport_km_per_week}
+                onChange={(v) => set('public_transport_km_per_week', v)}
+                hint="Metro, bus, auto-rickshaw"
+              />
+              <NumberField
+                id="domestic_flights"
+                label="Domestic flights"
+                unit="per year"
+                max={100}
+                value={profile.domestic_flights_per_year}
+                onChange={(v) => set('domestic_flights_per_year', Math.round(v))}
+              />
+              <NumberField
+                id="intl_flights"
+                label="International flights"
+                unit="per year"
+                max={50}
+                value={profile.international_flights_per_year}
+                onChange={(v) => set('international_flights_per_year', Math.round(v))}
+              />
+            </Section>
+
+            <Section title="Home Energy" emoji="⚡" color="border-yellow-200">
+              <SliderField
+                id="electricity"
+                label="Electricity"
+                unit="kWh/month"
+                max={1000}
+                step={10}
+                value={profile.monthly_electricity_kwh}
+                onChange={(v) => set('monthly_electricity_kwh', v)}
+                hint="Average Indian household: 150–400 kWh/month"
+              />
+              <SliderField
+                id="renewable"
+                label="Renewable share"
+                unit="%"
+                max={100}
+                step={5}
+                value={profile.renewable_energy_percent}
+                onChange={(v) => set('renewable_energy_percent', v)}
+                hint="Solar panels, green tariff, etc."
+              />
+              <NumberField
+                id="home_size"
+                label="Home size"
+                unit="sq ft"
+                max={20000}
+                step={100}
+                value={profile.home_size_sqft}
+                onChange={(v) => set('home_size_sqft', v)}
+              />
+            </Section>
+
+            <Section title="Digital Life" emoji="📱" color="border-teal-200">
+              <SliderField
+                id="streaming"
+                label="Video streaming"
+                unit="hrs/week"
+                max={40}
+                step={1}
+                value={profile.streaming_hours_per_week}
+                onChange={(v) => set('streaming_hours_per_week', v)}
+                hint="HD streaming ≈ 36 g CO₂/hr (IEA 2023)"
+              />
+              <SliderField
+                id="online_orders"
+                label="Online deliveries"
+                unit="orders/month"
+                max={30}
+                step={1}
+                value={profile.online_orders_per_month}
+                onChange={(v) => set('online_orders_per_month', Math.round(v))}
+                hint="Standard delivery ≈ 300 g CO₂/package"
+              />
+            </Section>
           </div>
-          <SliderField
-            id="local_food"
-            label="Locally sourced food"
-            unit="%"
-            max={100}
-            step={5}
-            value={profile.local_food_percent}
-            onChange={(v) => set('local_food_percent', v)}
-            hint="Reduces food transport emissions by up to 10%"
-          />
-        </Section>
 
-        {/* ── Energy ── */}
-        <Section title="Home Energy" emoji="⚡" color="border-yellow-200">
-          <SliderField
-            id="electricity"
-            label="Electricity"
-            unit="kWh/month"
-            max={1000}
-            step={10}
-            value={profile.monthly_electricity_kwh}
-            onChange={(v) => set('monthly_electricity_kwh', v)}
-            hint="Average Indian household: 150–400 kWh/month"
-          />
-          <SliderField
-            id="renewable"
-            label="Renewable share"
-            unit="%"
-            max={100}
-            step={5}
-            value={profile.renewable_energy_percent}
-            onChange={(v) => set('renewable_energy_percent', v)}
-            hint="Solar panels, green tariff, etc."
-          />
-          <NumberField
-            id="home_size"
-            label="Home size"
-            unit="sq ft"
-            max={20000}
-            step={100}
-            value={profile.home_size_sqft}
-            onChange={(v) => set('home_size_sqft', v)}
-          />
-        </Section>
+          {/* ── RIGHT: Food + Shopping ── */}
+          <div className="space-y-5">
+            <Section title="Food & Diet" emoji="🍽️" color="border-orange-200">
+              <div className="sm:col-span-2">
+                <fieldset>
+                  <legend className="text-sm font-medium text-gray-700 mb-3">Diet type</legend>
+                  <div
+                    role="radiogroup"
+                    aria-label="Select your diet type"
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    {DIET_OPTIONS.map((opt) => (
+                      <label
+                        key={opt.value}
+                        className={`flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                          profile.diet_type === opt.value
+                            ? 'border-green-500 bg-green-50 text-green-800 shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="diet_type"
+                          value={opt.value}
+                          checked={profile.diet_type === opt.value}
+                          onChange={() => set('diet_type', opt.value)}
+                          className="sr-only"
+                        />
+                        <span aria-hidden="true" className="text-xl">{opt.emoji}</span>
+                        <div>
+                          <div className="text-xs font-semibold">{opt.label}</div>
+                          <div className="text-xs text-gray-400">{opt.sub}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+              <SliderField
+                id="local_food"
+                label="Locally sourced food"
+                unit="%"
+                max={100}
+                step={5}
+                value={profile.local_food_percent}
+                onChange={(v) => set('local_food_percent', v)}
+                hint="Reduces food transport emissions by up to 10%"
+              />
+            </Section>
 
-        {/* ── Shopping ── */}
-        <Section title="Shopping" emoji="🛍️" color="border-purple-200">
-          <NumberField
-            id="clothing"
-            label="New clothing items"
-            unit="per year"
-            max={500}
-            value={profile.new_clothing_items_per_year}
-            onChange={(v) => set('new_clothing_items_per_year', Math.round(v))}
-            hint="Average: 20–30 items/year"
-          />
-          <NumberField
-            id="electronics"
-            label="New electronics"
-            unit="per year"
-            max={100}
-            value={profile.new_electronics_per_year}
-            onChange={(v) => set('new_electronics_per_year', Math.round(v))}
-            hint="Phone, laptop, TV, etc."
-          />
-        </Section>
+            <Section title="Shopping" emoji="🛍️" color="border-purple-200">
+              <NumberField
+                id="clothing"
+                label="New clothing items"
+                unit="per year"
+                max={500}
+                value={profile.new_clothing_items_per_year}
+                onChange={(v) => set('new_clothing_items_per_year', Math.round(v))}
+                hint="Average: 20–30 items/year"
+              />
+              <NumberField
+                id="electronics"
+                label="New electronics"
+                unit="per year"
+                max={100}
+                value={profile.new_electronics_per_year}
+                onChange={(v) => set('new_electronics_per_year', Math.round(v))}
+                hint="Phone, laptop, TV, etc."
+              />
+            </Section>
+          </div>
 
-        {/* ── Digital / Shadow Carbon ── */}
-        <Section title="Digital Life" emoji="📱" color="border-teal-200">
-          <SliderField
-            id="streaming"
-            label="Video streaming"
-            unit="hrs/week"
-            max={40}
-            step={1}
-            value={profile.streaming_hours_per_week}
-            onChange={(v) => set('streaming_hours_per_week', v)}
-            hint="HD streaming ≈ 36 g CO₂/hr (IEA 2023)"
-          />
-          <SliderField
-            id="online_orders"
-            label="Online deliveries"
-            unit="orders/month"
-            max={30}
-            step={1}
-            value={profile.online_orders_per_month}
-            onChange={(v) => set('online_orders_per_month', Math.round(v))}
-            hint="Standard delivery ≈ 300 g CO₂/package"
-          />
-        </Section>
+        </div>{/* end two-column grid */}
 
         {/* ── Submit ── */}
         <button
