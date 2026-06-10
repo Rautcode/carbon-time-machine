@@ -1,17 +1,15 @@
 import { memo } from 'react'
 import type { FutureScenario } from '../../types'
 import { formatINR, formatTons, formatNumber, emissionColor } from '../../utils/formatters'
+import { PARIS_LIMIT_TONS, TREE_SEQUESTRATION_KG } from '../../constants'
 
 interface Props {
   scenario: FutureScenario
   isActive: boolean
 }
 
-/** Paris Agreement 1.5°C per-capita annual budget (tons CO₂e) */
-const PARIS_LIMIT_TONS = 2.0
-
-/** Tons of CO₂ absorbed by one mature tree per year (USDA Forest Service) */
-const TREE_SEQUESTRATION_TONS = 0.021
+/** Tons equivalent of the tree sequestration constant (kg → tons) */
+const TREE_SEQUESTRATION_TONS = TREE_SEQUESTRATION_KG / 1000
 
 const YEAR_CONFIG: Record<number, { icon: string; ring: string; borderLeft: string; glow: string }> = {
   2030: { icon: '🌱', ring: 'border-orange-400', borderLeft: 'border-l-orange-400', glow: 'shadow-orange-100' },

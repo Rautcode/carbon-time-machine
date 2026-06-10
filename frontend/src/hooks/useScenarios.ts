@@ -2,14 +2,27 @@ import { useState, useCallback } from 'react'
 import { generateScenarios } from '../api/scenarios'
 import type { UserProfile, ScenarioResponse } from '../types'
 
+/** Shape returned by the useScenarios hook */
 interface UseScenarios {
+  /** Generated scenario response, or null before first successful call */
   data: ScenarioResponse | null
+  /** True while the API call is in flight */
   loading: boolean
+  /** Human-readable error message, or null when no error */
   error: string | null
+  /** Trigger scenario generation from a user profile */
   generate: (profile: UserProfile) => Promise<void>
+  /** Clear all state and return to the input step */
   reset: () => void
 }
 
+/**
+ * Manages the full lifecycle of scenario generation:
+ * idle → loading → (data | error) → reset → idle.
+ *
+ * Errors from non-Error rejections are normalised to a fallback string
+ * so callers always receive a displayable message.
+ */
 export function useScenarios(): UseScenarios {
   const [data, setData] = useState<ScenarioResponse | null>(null)
   const [loading, setLoading] = useState(false)

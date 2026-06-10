@@ -57,10 +57,11 @@ _SCENARIOS: list[dict] = [
 ]
 
 
-def _apply_mutations(base: dict, mutations: list) -> dict:  # type: ignore[type-arg]
+def _apply_mutations(base: dict[str, object], mutations: list[tuple[str, object]]) -> dict[str, object]:
+    """Return a copy of *base* with each (key, transform_fn) mutation applied."""
     p = base.copy()
     for key, fn in mutations:
-        p[key] = fn(p[key])
+        p[key] = fn(p[key])  # type: ignore[operator]
     return p
 
 
@@ -99,14 +100,12 @@ async def generate_scenarios(profile: UserProfile) -> ScenarioResponse:
         mod_tons = mod_carbon.total_tons
 
         timeline: list[TimelinePoint] = []
-        prev_year = BASE_YEAR
 
         for year in PROJECTION_YEARS:
             offset = year - BASE_YEAR
             annual = project_emissions(mod_tons, cfg["growth_rate"], offset)
             cumulative = _cumulative_tons(mod_tons, cfg["growth_rate"], BASE_YEAR + 1, year)
             annual_cost = mod_cost * ((1 + COST_INFLATION) ** offset)
-            prev_year = year
 
             narrative = await generate_timeline_narrative(
                 year, profile_summary, annual, cumulative, annual_cost

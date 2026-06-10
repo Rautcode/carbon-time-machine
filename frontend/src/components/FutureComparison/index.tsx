@@ -3,6 +3,7 @@ import type { ScenarioResponse } from '../../types'
 import { Timeline } from '../Timeline'
 import { TipsPanel } from '../TipsPanel'
 import { formatINR, formatTons, breakdownPercent, scenarioGradient } from '../../utils/formatters'
+import { PARIS_LIMIT_TONS, GAUGE_MAX_TONS } from '../../constants'
 
 interface Props {
   data: ScenarioResponse
@@ -31,14 +32,11 @@ const BAR_LABELS: Record<string, string> = {
   digital:   '📱 Digital',
 }
 
-/** Paris Agreement 1.5°C per-capita annual budget (tons CO₂e) */
-const PARIS_LIMIT_TONS = 2.0
-
 /* ── Animated circular CO₂ gauge ───────────────────────────────────────── */
 function CarbonGauge({ tons }: { tons: number }) {
   const R = 50
   const circ = 2 * Math.PI * R
-  const pct = Math.min(1, tons / 10)
+  const pct = Math.min(1, tons / GAUGE_MAX_TONS)
   const offset = circ * (1 - pct)
   const color  = tons <= 2 ? '#16a34a' : tons <= 4 ? '#ca8a04' : tons <= 6 ? '#ea580c' : '#dc2626'
   const bgRing = tons <= 2 ? '#bbf7d0' : tons <= 4 ? '#fef08a' : tons <= 6 ? '#fed7aa' : '#fecaca'
