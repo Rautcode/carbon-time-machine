@@ -6,8 +6,9 @@ from fastapi import APIRouter, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.models.schemas import ClimateContext, TipsRequest, TipsResponse
+from app.models.schemas import ClimateContext, LetterRequest, LetterResponse, TipsRequest, TipsResponse
 from app.services.climate_service import get_climate_context
+from app.services.gemini_service import generate_2050_letter
 from app.services.tips_service import generate_tips
 
 _logger = logging.getLogger(__name__)
@@ -26,6 +27,28 @@ async def climate_context(request: Request) -> ClimateContext:
         raise HTTPException(
             status_code=503, detail="Climate data temporarily unavailable"
         ) from exc
+
+
+@router.post("/letter", response_model=LetterResponse)
+@limiter.limit("5/minute")
+async def climate_letter(request: Request, body: LetterRequest) -> LetterResponse:
+    """Generate a personal letter from the user's 2050 self via Gemini AI."""
+    try:
+        letter = await generate_2050_letter(
+            current_annual_tons=body.current_annual_tons,
+            dominant_category=body.dominant_category,
+            scenario_id=body.scenario_id,
+            total_savings_tons=body.total_savings_tons,
+            final_year_tons=body.final_year_tons,
+        )
+        return LetterResponse(
+            letter=letter,
+            scenario_id=body.scenario_id,
+            generated_at=datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception as exc:
+        _logger.exception("Letter generation failed")
+        raise HTTPException(status_code=500, detail="Letter generation failed") from exc
 
 
 @router.post("/tips", response_model=TipsResponse)

@@ -3,6 +3,8 @@ import type { ScenarioResponse } from '../../types'
 import { Timeline } from '../Timeline'
 import { TipsPanel } from '../TipsPanel'
 import { CommunityImpact } from '../CommunityImpact'
+import { ShareCardButton } from '../ShareCard'
+import { LetterModal } from '../LetterModal'
 import { formatINR, formatTons, breakdownPercent, scenarioGradient } from '../../utils/formatters'
 import { PARIS_LIMIT_TONS, GAUGE_MAX_TONS } from '../../constants'
 
@@ -102,6 +104,7 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
   const [activeScenario, setActiveScenario] = useState(
     () => data.scenarios[0]?.scenario_id ?? 'bau'
   )
+  const [letterOpen, setLetterOpen] = useState(false)
   const total = data.current_annual_tons
 
   const committed = data.scenarios.find((s) => s.scenario_id === 'committed')
@@ -234,6 +237,27 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
       {/* ── Community Impact (full width, only when committed scenario exists) ── */}
       {committed && (
         <CommunityImpact committedScenario={committed} />
+      )}
+
+      {/* ── Share + Letter CTAs ── */}
+      <div className="flex flex-wrap items-center justify-center gap-3 py-2">
+        <ShareCardButton data={data} />
+        <button
+          onClick={() => setLetterOpen(true)}
+          className="inline-flex items-center gap-2 px-5 py-2.5
+            rounded-full border-2 border-amber-300 text-amber-800 bg-amber-50
+            hover:border-amber-500 hover:bg-amber-100
+            text-sm font-semibold transition-all duration-200
+            focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
+          aria-label="Read a letter written by your 2050 self"
+        >
+          ✉️  Letter from Your 2050 Self
+        </button>
+      </div>
+
+      {/* ── Letter modal (portal-style, rendered in-tree) ── */}
+      {letterOpen && (
+        <LetterModal data={data} onClose={() => setLetterOpen(false)} />
       )}
 
     </div>

@@ -88,3 +88,21 @@ class ClimateContext(BaseModel):
     co2_ppm: float
     location: str
     fetched_at: str
+
+
+# ── Letter from 2050 Self ─────────────────────────────────────────────────────
+
+_DominantCategory = Literal["transport", "food", "energy", "shopping", "digital"]
+
+class LetterRequest(BaseModel):
+    current_annual_tons: float       = Field(gt=0, le=1000)
+    dominant_category: _DominantCategory          # allowlisted — interpolated into prompt
+    scenario_id: Literal["committed", "small", "bau"]
+    total_savings_tons: float        = Field(ge=0, le=10_000)
+    final_year_tons: float           = Field(ge=0, le=1000)
+
+
+class LetterResponse(BaseModel):
+    letter: str
+    scenario_id: str
+    generated_at: str
