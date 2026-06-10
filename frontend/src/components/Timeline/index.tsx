@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import type { FutureScenario } from '../../types'
-import { formatINR, formatTons, formatNumber, emissionColor, scenarioGradient } from '../../utils/formatters'
+import { formatINR, formatTons, formatNumber, emissionColor } from '../../utils/formatters'
 
 interface Props {
   scenario: FutureScenario

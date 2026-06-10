@@ -6,7 +6,7 @@ import type { ScenarioResponse } from '../types'
 
 const MOCK_RESPONSE: ScenarioResponse = {
   current_annual_tons: 4.5,
-  breakdown: { transport: 2.0, food: 1.5, energy: 0.7, shopping: 0.3 },
+  breakdown: { transport: 2.0, food: 1.5, energy: 0.7, shopping: 0.3, digital: 0 },
   scenarios: [],
   generated_at: '2025-01-01T00:00:00Z',
 }
@@ -23,6 +23,8 @@ const MOCK_PROFILE = {
   home_size_sqft: 1000,
   new_clothing_items_per_year: 15,
   new_electronics_per_year: 2,
+  streaming_hours_per_week: 0,
+  online_orders_per_month: 0,
 }
 
 describe('useScenarios', () => {

@@ -32,7 +32,7 @@ const makeTimeline = () => [
 
 const MOCK_DATA: ScenarioResponse = {
   current_annual_tons: 4.0,
-  breakdown: { transport: 2.0, food: 1.0, energy: 0.7, shopping: 0.3 },
+  breakdown: { transport: 2.0, food: 1.0, energy: 0.7, shopping: 0.3, digital: 0 },
   scenarios: [
     {
       scenario_id: 'bau',
