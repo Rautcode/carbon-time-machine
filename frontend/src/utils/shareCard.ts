@@ -11,7 +11,7 @@ const INDIA_AVG_TONS = 1.9
 /** Paris 1.5°C compatible per-capita budget */
 const PARIS_TONS = 2.0
 
-const CATEGORY_LABELS: Record<string, string> = {
+export const CATEGORY_LABELS: Record<string, string> = {
   transport: '🚗 Transport',
   food:      '🍽 Food',
   energy:    '⚡ Energy',
@@ -19,26 +19,40 @@ const CATEGORY_LABELS: Record<string, string> = {
   digital:   '📱 Digital',
 }
 
-interface Personality {
-  label:   string
-  emoji:   string
-  accent:  string   // hex — pill border + glow
-  pillBg:  string   // semi-transparent fill
+/** Visual personality tier derived from annual carbon footprint */
+export interface Personality {
+  /** Human-readable label shown on the share card pill */
+  label:  string
+  /** Emoji prefix for the pill */
+  emoji:  string
+  /** Hex accent colour — used for pill border, glow, and bar fill */
+  accent: string
+  /** Semi-transparent background for the pill */
+  pillBg: string
 }
 
 const PERSONALITIES: Array<{ maxTons: number } & Personality> = [
-  { maxTons: 1.5,      label: 'Climate Leader',      emoji: '🌿', accent: '#10b981', pillBg: '#10b98122' },
-  { maxTons: 2.5,      label: 'Urban Optimizer',      emoji: '⚡', accent: '#38bdf8', pillBg: '#38bdf822' },
-  { maxTons: 4.0,      label: 'Reluctant Reformer',   emoji: '🚶', accent: '#fbbf24', pillBg: '#fbbf2422' },
-  { maxTons: 6.0,      label: 'Carbon Aware',          emoji: '🔄', accent: '#fb923c', pillBg: '#fb923c22' },
-  { maxTons: Infinity, label: 'Change Opportunity',   emoji: '🔴', accent: '#f87171', pillBg: '#f8717122' },
+  { maxTons: 1.5,      label: 'Climate Leader',    emoji: '🌿', accent: '#10b981', pillBg: '#10b98122' },
+  { maxTons: 2.5,      label: 'Urban Optimizer',    emoji: '⚡', accent: '#38bdf8', pillBg: '#38bdf822' },
+  { maxTons: 4.0,      label: 'Reluctant Reformer', emoji: '🚶', accent: '#fbbf24', pillBg: '#fbbf2422' },
+  { maxTons: 6.0,      label: 'Carbon Aware',        emoji: '🔄', accent: '#fb923c', pillBg: '#fb923c22' },
+  { maxTons: Infinity, label: 'Change Opportunity',  emoji: '🔴', accent: '#f87171', pillBg: '#f8717122' },
 ]
 
-function getPersonality(tons: number): Personality {
+/**
+ * Return the personality tier for a given annual footprint in tons CO₂e.
+ * Exported for unit-testing the tier boundaries.
+ */
+export function getPersonality(tons: number): Personality {
   return PERSONALITIES.find(p => tons < p.maxTons) ?? PERSONALITIES[PERSONALITIES.length - 1]
 }
 
-function getDominantCategory(breakdown: Record<string, number>): string {
+/**
+ * Return the key of the highest-emission category from a breakdown dict.
+ * Falls back to `'energy'` when the dict is empty or contains only unknown keys.
+ * Exported for unit-testing.
+ */
+export function getDominantCategory(breakdown: Record<string, number>): string {
   const entries = Object.entries(breakdown)
   if (entries.length === 0) return 'energy'
   return entries.reduce((a, b) => (b[1] > a[1] ? b : a))[0]
