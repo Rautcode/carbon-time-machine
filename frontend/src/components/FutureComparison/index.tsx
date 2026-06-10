@@ -2,6 +2,7 @@ import { memo, useState } from 'react'
 import type { ScenarioResponse } from '../../types'
 import { Timeline } from '../Timeline'
 import { TipsPanel } from '../TipsPanel'
+import { CommunityImpact } from '../CommunityImpact'
 import { formatINR, formatTons, breakdownPercent, scenarioGradient } from '../../utils/formatters'
 import { PARIS_LIMIT_TONS, GAUGE_MAX_TONS } from '../../constants'
 
@@ -229,6 +230,14 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
           breakdown={data.breakdown}
         />
       </div>
+
+      {/* ── Community Impact (full width, only when committed scenario exists) ── */}
+      {committed && (
+        <CommunityImpact
+          committedScenario={committed}
+          currentAnnualTons={data.current_annual_tons}
+        />
+      )}
 
     </div>
   )
