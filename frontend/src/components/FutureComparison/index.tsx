@@ -233,10 +233,7 @@ export const FutureComparison = memo(({ data, onReset }: Props) => {
 
       {/* ── Community Impact (full width, only when committed scenario exists) ── */}
       {committed && (
-        <CommunityImpact
-          committedScenario={committed}
-          currentAnnualTons={data.current_annual_tons}
-        />
+        <CommunityImpact committedScenario={committed} />
       )}
 
     </div>

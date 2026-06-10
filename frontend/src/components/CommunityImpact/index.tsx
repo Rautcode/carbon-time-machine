@@ -23,18 +23,19 @@ const CAR_KG_PER_YEAR = 1_800
 const HORIZON_YEAR = 2040
 /** Base year for projections */
 const BASE_YEAR = 2025
-/** Derived projection span so HORIZON_YEAR and HORIZON_YEARS stay in sync */
-const HORIZON_YEARS = HORIZON_YEAR - BASE_YEAR
+/** Derived projection span — stays in sync with HORIZON_YEAR automatically */
+const PROJECTION_SPAN_YEARS = HORIZON_YEAR - BASE_YEAR
 
 /**
  * Animated count-up hook — counts from 0 to `target` over ~1.2 s.
- * Uses an `isCancelled` flag to prevent setState calls after unmount.
- * Relies on `animKey`-based remount in the parent for preset changes,
- * so deps only need to handle the initial visibility trigger.
+ * Driven entirely by `animKey`: when `animKey` changes the parent remounts
+ * StatCard (via JSX key), which resets this hook to its initial state.
+ * `active` (visibility) is the only dep needed; `target` is NOT in the dep
+ * array to avoid the edge-case where two different presets produce the same
+ * computed value and the effect silently skips re-running.
  */
 function useCountUp(target: number, active: boolean): number {
   const [value, setValue] = useState(0)
-  const frameRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!active) {
@@ -42,6 +43,7 @@ function useCountUp(target: number, active: boolean): number {
       return
     }
 
+    let frameId: number
     let isCancelled = false
     const startTime = performance.now()
     const duration = 1200
@@ -53,30 +55,37 @@ function useCountUp(target: number, active: boolean): number {
       const eased = 1 - Math.pow(1 - progress, 3) // ease-out cubic
       setValue(Math.round(eased * target))
       if (progress < 1) {
-        frameRef.current = requestAnimationFrame(tick)
+        frameId = requestAnimationFrame(tick)
       }
     }
 
-    frameRef.current = requestAnimationFrame(tick)
+    frameId = requestAnimationFrame(tick)
 
     return () => {
       isCancelled = true
-      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
+      cancelAnimationFrame(frameId)
     }
-  }, [target, active])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]) // `target` intentionally omitted — rely on animKey remount instead
 
   return value
 }
 
 /**
- * Format animated `displayed` value using suffix determined by `target`,
+ * Format animated `displayed` value using the suffix determined by `target`
  * so the unit label (K / L / Cr) stays stable throughout the animation.
+ * Uses plain integer formatting while `displayed < 1_000` to avoid "0.0K".
  */
 function fmtAnimated(displayed: number, target: number): string {
   if (!isFinite(target) || target < 0) return '0'
   if (target >= 10_000_000) return `${(displayed / 10_000_000).toFixed(1)} Cr`
   if (target >= 100_000)    return `${(displayed / 100_000).toFixed(1)} L`
-  if (target >= 1_000)      return `${(displayed / 1_000).toFixed(1)}K`
+  if (target >= 1_000) {
+    // Show integer until the animated value itself crosses 1K for a clean display
+    return displayed >= 1_000
+      ? `${(displayed / 1_000).toFixed(1)}K`
+      : displayed.toLocaleString('en-IN')
+  }
   return displayed.toLocaleString('en-IN')
 }
 
@@ -116,7 +125,7 @@ export const CommunityImpact = memo(({ committedScenario }: Props) => {
   const [visible, setVisible] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Trigger animation once when the section scrolls into view, then disconnect
+  // Trigger animation once when section scrolls into view, then disconnect
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -189,11 +198,11 @@ export const CommunityImpact = memo(({ committedScenario }: Props) => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         <StatCard key={`tons-${animKey}`}
           icon="🌫️" value={totalTonsSaved}    unit="tons CO₂ saved"
-          label={`over ${HORIZON_YEARS} years`} color="border-orange-200" active={visible}
+          label={`over ${PROJECTION_SPAN_YEARS} years`} color="border-orange-200" active={visible}
         />
         <StatCard key={`trees-${animKey}`}
           icon="🌲" value={totalTreesPlanted}  unit="trees planted"
-          label="equivalent offset"             color="border-green-200"  active={visible}
+          label="equivalent offset"            color="border-green-200"  active={visible}
         />
         <StatCard key={`cars-${animKey}`}
           icon="🚗" value={carsRemoved}         unit="cars off the road"
