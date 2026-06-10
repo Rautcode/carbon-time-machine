@@ -1,14 +1,22 @@
 import logging
+import os
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.core.config import get_settings
 from app.routers import extras, scenarios
+
+# Resolved once at startup — works both locally (no ./static) and in Docker
+_STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
+_STATIC_INDEX = os.path.join(_STATIC_DIR, "index.html")
+_SERVING_FRONTEND = os.path.isfile(_STATIC_INDEX)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,9 +60,22 @@ async def add_security_headers(request: Request, call_next) -> Response:  # type
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'none'; frame-ancestors 'none'"
-    )
+    if request.url.path.startswith("/api"):
+        # Strict CSP for pure-JSON API endpoints
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'"
+        )
+    else:
+        # Permissive CSP for serving the React SPA
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'"
+        )
     return response
 
 # 4. Request body size limit (64 KB max — protects against payload DoS)
@@ -63,12 +84,13 @@ MAX_BODY_SIZE = 64 * 1024  # 64 KB
 @app.middleware("http")
 async def limit_body_size(request: Request, call_next) -> Response:  # type: ignore[type-arg]
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > MAX_BODY_SIZE:
-        from fastapi.responses import JSONResponse
-        return JSONResponse(
-            status_code=413,
-            content={"detail": "Request body too large"},
-        )
+    if content_length:
+        try:
+            cl = int(content_length)
+        except ValueError:
+            return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length"})
+        if cl > MAX_BODY_SIZE:
+            return JSONResponse(status_code=413, content={"detail": "Request body too large"})
     return await call_next(request)
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
@@ -87,3 +109,18 @@ async def validate_config() -> None:
 # ── Routes ────────────────────────────────────────────────────────────────────
 app.include_router(scenarios.router)
 app.include_router(extras.router)
+
+# ── Static frontend (present in Docker image; absent during local dev) ────────
+if _SERVING_FRONTEND:
+    assets_dir = os.path.join(_STATIC_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str) -> FileResponse:
+        """Catch-all: return index.html so React Router handles the path.
+        Unknown /api/* paths get a proper 404 instead of the SPA shell."""
+        from fastapi import HTTPException
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse(_STATIC_INDEX)

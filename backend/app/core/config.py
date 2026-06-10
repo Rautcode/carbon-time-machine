@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     gemini_api_key: str = ""
+    # Set ALLOWED_ORIGINS=* in Cloud Run env vars, or comma-separated URLs
     allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     app_name: str = "Carbon Time Machine"
     debug: bool = False
