@@ -31,13 +31,16 @@ const HORIZON_YEARS = 15
  */
 function useCountUp(target: number, active: boolean): number {
   const [value, setValue] = useState(0)
-  const frameRef = useRef<number>(0)
+  const frameRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!active) {
       setValue(0)
       return
     }
+
+    // Reset to 0 before starting so the count-up always begins from zero
+    setValue(0)
 
     let isCancelled = false
     const startTime = performance.now()
@@ -59,15 +62,16 @@ function useCountUp(target: number, active: boolean): number {
 
     return () => {
       isCancelled = true
-      cancelAnimationFrame(frameRef.current)
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
     }
   }, [target, active])
 
   return value
 }
 
-/** Format large numbers with Indian locale (K / L / Cr) */
+/** Format large numbers with Indian locale (K / L / Cr). Returns '0' for non-finite or negative values. */
 function fmtBig(n: number): string {
+  if (!isFinite(n) || n < 0) return '0'
   if (n >= 10_000_000) return `${(n / 10_000_000).toFixed(1)} Cr`
   if (n >= 100_000)    return `${(n / 100_000).toFixed(1)} L`
   if (n >= 1_000)      return `${(n / 1_000).toFixed(1)}K`
@@ -128,15 +132,15 @@ export const CommunityImpact = memo(({ committedScenario }: Props) => {
   }
 
   const n = preset.value
-  const savingsTonsPerPerson = committedScenario.total_savings_tons
-  const savingsInrPerPerson  = committedScenario.total_savings_inr
+  // Guard against undefined/NaN — committedScenario is always provided but
+  // total_savings_* could be 0 for the BAU scenario passed by mistake.
+  const savingsTonsPerPerson = committedScenario?.total_savings_tons ?? 0
+  const savingsInrPerPerson  = committedScenario?.total_savings_inr  ?? 0
 
   const totalTonsSaved    = Math.round(savingsTonsPerPerson * n)
   const totalTreesPlanted = Math.round((totalTonsSaved * 1_000) / TREE_KG)
   const carsRemoved       = Math.round((totalTonsSaved * 1_000) / CAR_KG_PER_YEAR)
   const moneySaved        = Math.round(savingsInrPerPerson * n)
-
-  const active = visible
 
   return (
     <div ref={ref} className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 shadow-md p-6">
@@ -181,22 +185,22 @@ export const CommunityImpact = memo(({ committedScenario }: Props) => {
         <StatCard key={`tons-${animKey}`}
           icon="🌫️" value={totalTonsSaved} unit="tons CO₂ saved"
           label={`over ${HORIZON_YEARS} years`} color="border-orange-200"
-          active={active}
+          active={visible}
         />
         <StatCard key={`trees-${animKey}`}
           icon="🌲" value={totalTreesPlanted} unit="trees planted"
           label="equivalent offset" color="border-green-200"
-          active={active}
+          active={visible}
         />
         <StatCard key={`cars-${animKey}`}
           icon="🚗" value={carsRemoved} unit="cars off the road"
           label="for a full year" color="border-blue-200"
-          active={active}
+          active={visible}
         />
         <StatCard key={`money-${animKey}`}
           icon="💰" value={moneySaved} unit="₹ total saved"
           label="in fuel + electricity" color="border-purple-200"
-          active={active}
+          active={visible}
         />
       </div>
 
